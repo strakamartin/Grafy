@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->buttonGenerujVrcholy, &QPushButton::clicked, this, &MainWindow::onGenerujVrcholy);
     connect(ui->buttonGenerujHrany, &QPushButton::clicked, this, &MainWindow::onGenerujHrany);
     connect(ui->buttonZmazVse, &QPushButton::clicked, this, &MainWindow::onZmazVse);
+    connect(ui->pushButtonSmazHranu, &QPushButton::clicked, this, &MainWindow::onSmazHranu);
 }
 
 MainWindow::~MainWindow()
@@ -68,13 +69,75 @@ void MainWindow::onPocetVrcholu()
 
 void MainWindow::onPridejHranu()
 {
+    if (mVrcholy.empty() || mMaticeSousednosti == nullptr)
+        return;
+
     int x = ui->comboPrvniVrchol->currentIndex();
     int y = ui->comboDruhyVrchol->currentIndex();
-    mMaticeSousednosti[x][y] = ui->spinBoxVahaHrany->value();
-    mMaticeSousednosti[y][x] = ui->spinBoxVahaHrany->value();
-    vypisMaticeSousednosti();
 
-    //todo update nasledniku
+    if (x == y)
+        return;
+
+    // Remove any existing edge between the same pair before re-adding
+    removeEdge(x, y);
+
+    // Weight = Euclidean distance between the two vertex positions
+    double dx = mVrcholy[x].mX - mVrcholy[y].mX;
+    double dy = mVrcholy[x].mY - mVrcholy[y].mY;
+    int vaha = qMax(1, static_cast<int>(std::round(std::sqrt(dx*dx + dy*dy))));
+
+    mMaticeSousednosti[x][y] = vaha;
+    mMaticeSousednosti[y][x] = vaha;
+
+    mVrcholy[x].seznamNasledniku.insert(vaha, &mVrcholy[y]);
+    mVrcholy[y].seznamNasledniku.insert(vaha, &mVrcholy[x]);
+
+    mHrany.insert(vaha, Hrana(x, y, vaha));
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+// ─── Smaz hranu ──────────────────────────────────────────────────────────────
+void MainWindow::onSmazHranu()
+{
+    if (mVrcholy.empty() || mMaticeSousednosti == nullptr)
+        return;
+
+    int x = ui->comboPrvniVrchol->currentIndex();
+    int y = ui->comboDruhyVrchol->currentIndex();
+
+    if (!removeEdge(x, y))
+        return;
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+bool MainWindow::removeEdge(int x, int y)
+{
+    if (x == y || mMaticeSousednosti == nullptr || mMaticeSousednosti[x][y] == 0)
+        return false;
+
+    int vaha = mMaticeSousednosti[x][y];
+
+    mMaticeSousednosti[x][y] = 0;
+    mMaticeSousednosti[y][x] = 0;
+
+    mVrcholy[x].seznamNasledniku.remove(vaha, &mVrcholy[y]);
+    mVrcholy[y].seznamNasledniku.remove(vaha, &mVrcholy[x]);
+
+    int minIdx = std::min(x, y), maxIdx = std::max(x, y);
+    for (auto it = mHrany.begin(); it != mHrany.end(); ++it) {
+        const Hrana& h = it.value();
+        if (std::min(h.mIndexA, h.mIndexB) == minIdx &&
+            std::max(h.mIndexA, h.mIndexB) == maxIdx) {
+            mHrany.erase(it);
+            break;
+        }
+    }
+
+    return true;
 }
 
 void MainWindow::onImportGraf()

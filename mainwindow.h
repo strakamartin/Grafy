@@ -39,6 +39,7 @@ public slots:
     void onGenerujVrcholy();
     void onGenerujHrany();
     void onZmazVse();
+    void onSmazHranu();
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -70,5 +71,9 @@ private:
 
     void kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany = {},
                      QColor zvyraznenaBarva = Qt::green);
+
+    // Removes the undirected edge (x,y) from all data structures; does nothing
+    // if x == y or the edge does not exist. Returns true if an edge was removed.
+    bool removeEdge(int x, int y);
 };
 #endif // MAINWINDOW_H
