@@ -2,9 +2,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QGraphicsScene>
 #include <vector>   //neco jako dynamicke pole, jenom chytrejsi
 #include <map>  //sklada sa u dvojice hodnot {klic, hodnota}
+#include <set>
 #include <QMap>
+#include <climits>
+#include <cmath>
 
 #include "vrchol.h"
 #include "hrana.h"
@@ -28,9 +32,17 @@ public:
 public slots:
     void onPocetVrcholu();
     void onPridejHranu();
-    void onImportGraf();
+    //void onImportGraf();
     void onDijkstra();
     void onKruskalkuv();
+
+    void onGenerujVrcholy();
+    void onGenerujHrany();
+    void onZmazVse();
+    void onSmazHranu();
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
     Ui::MainWindow *ui;
@@ -45,6 +57,8 @@ private:
     //map anebo multimap nam zabezpeci automaticke trideni od nejmensi vzdalenosti po nejvacsi
     std::multimap<int, int> mDocastneVrcholy;//map nestaci, protoze vice uzlu muze mit rovnakou vzdalenost, chceme aby v mape byli vsichni
 
+    QGraphicsScene* mScene;
+
     void vytvorMaticiSousednosti();
     void zmazMaticiSousednosti();
 
@@ -55,5 +69,11 @@ private:
     void updateSousedu(int indexNejblizsihoVrcholu);
     void vypisVzdalenosti();
 
+    void kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany = {},
+                     QColor zvyraznenaBarva = Qt::green);
+
+    // Removes the undirected edge (x,y) from all data structures; does nothing
+    // if x == y or the edge does not exist. Returns true if an edge was removed.
+    bool removeEdge(int x, int y);
 };
 #endif // MAINWINDOW_H
