@@ -2,6 +2,13 @@
 #include "ui_mainwindow.h"
 
 #include <QSpinBox>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QGraphicsTextItem>
+#include <QRandomGenerator>
+#include <QFont>
+#include <algorithm>
+#include <numeric>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,13 +18,19 @@ MainWindow::MainWindow(QWidget *parent)
     mMaticeSousednosti = nullptr;
     mPocetVrcholu = 0;
 
+    mScene = new QGraphicsScene(this);
+    ui->graphicsView->setScene(mScene);
+
     connect(ui->buttonImportGraf, &QPushButton::clicked, this, &MainWindow::onImportGraf);
     connect(ui->spinBoxPocetVrcholu, &QSpinBox::valueChanged, this, &MainWindow::onPocetVrcholu);
     connect(ui->pushButtonPridejHranu, &QPushButton::clicked, this, &MainWindow::onPridejHranu);
 
     connect(ui->buttonDijkstra, &QPushButton::clicked, this, &MainWindow::onDijkstra);
-
     connect(ui->buttonKurskalkuv, &QPushButton::clicked, this, &MainWindow::onKruskalkuv);
+
+    connect(ui->buttonGenerujVrcholy, &QPushButton::clicked, this, &MainWindow::onGenerujVrcholy);
+    connect(ui->buttonGenerujHrany, &QPushButton::clicked, this, &MainWindow::onGenerujHrany);
+    connect(ui->buttonZmazVse, &QPushButton::clicked, this, &MainWindow::onZmazVse);
 }
 
 MainWindow::~MainWindow()
@@ -101,6 +114,118 @@ void MainWindow::onImportGraf()
     mVrcholy[3].seznamNasledniku.insert(5, &mVrcholy[0]);
 }
 
+// ─── Generuj vrcholy ─────────────────────────────────────────────────────────
+void MainWindow::onGenerujVrcholy()
+{
+    // Clear everything
+    mScene->clear();
+    mVrcholy.clear();
+    mHrany.clear();
+    zmazMaticiSousednosti();
+
+    mPocetVrcholu = ui->spinBoxPocetVrcholu->value();
+    if (mPocetVrcholu < 1)
+        return;
+
+    vytvorMaticiSousednosti();
+
+    // Update combo boxes
+    ui->comboPrvniVrchol->clear();
+    ui->comboDruhyVrchol->clear();
+    ui->comboStartVrchol->clear();
+
+    // Determine drawing area (leave a margin of 30 px on each side)
+    const int margin = 30;
+    const int W = qMax(ui->graphicsView->width()  - 2 * margin, 200);
+    const int H = qMax(ui->graphicsView->height() - 2 * margin, 200);
+
+    // Reserve so that pointer addresses remain stable for seznamNasledniku
+    mVrcholy.reserve(mPocetVrcholu);
+
+    for (int i = 0; i < mPocetVrcholu; ++i) {
+        Vrchol v;
+        v.mX = static_cast<int>(QRandomGenerator::global()->bounded(W)) + margin;
+        v.mY = static_cast<int>(QRandomGenerator::global()->bounded(H)) + margin;
+        mVrcholy.push_back(v);
+
+        ui->comboPrvniVrchol->addItem(QString::number(i));
+        ui->comboDruhyVrchol->addItem(QString::number(i));
+        ui->comboStartVrchol->addItem(QString::number(i));
+    }
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+// ─── Generuj hrany ───────────────────────────────────────────────────────────
+void MainWindow::onGenerujHrany()
+{
+    if (mVrcholy.empty() || mMaticeSousednosti == nullptr || mPocetVrcholu < 2)
+        return;
+
+    // Reset adjacency matrix, successor lists and previous Dijkstra state
+    for (int i = 0; i < mPocetVrcholu; ++i) {
+        for (int j = 0; j < mPocetVrcholu; ++j)
+            mMaticeSousednosti[i][j] = 0;
+        mVrcholy[i].seznamNasledniku.clear();
+        mVrcholy[i].mVzdalenostOdStartu  = INT_MAX;
+        mVrcholy[i].mJeVzdalenostSpoctena = false;
+        mVrcholy[i].mIndexPredchudce     = -1;
+    }
+    mHrany.clear();
+
+    // All possible undirected edges
+    QVector<QPair<int,int>> allEdges;
+    allEdges.reserve(mPocetVrcholu * (mPocetVrcholu - 1) / 2);
+    for (int i = 0; i < mPocetVrcholu; ++i)
+        for (int j = i + 1; j < mPocetVrcholu; ++j)
+            allEdges.append({i, j});
+
+    // Fisher-Yates shuffle
+    for (int i = allEdges.size() - 1; i > 0; --i) {
+        int j = static_cast<int>(QRandomGenerator::global()->bounded(static_cast<quint32>(i + 1)));
+        std::swap(allEdges[i], allEdges[j]);
+    }
+
+    int percentage  = ui->spinHranyPercenta->value();
+    int targetEdges = static_cast<int>(allEdges.size() * percentage / 100.0);
+
+    for (int k = 0; k < targetEdges; ++k) {
+        int i    = allEdges[k].first;
+        int j    = allEdges[k].second;
+        int vaha = static_cast<int>(QRandomGenerator::global()->bounded(50)) + 1; // 1–50
+
+        mMaticeSousednosti[i][j] = vaha;
+        mMaticeSousednosti[j][i] = vaha;
+
+        // Update successor lists (pointers are stable because we reserved)
+        mVrcholy[i].seznamNasledniku.insert(vaha, &mVrcholy[j]);
+        mVrcholy[j].seznamNasledniku.insert(vaha, &mVrcholy[i]);
+
+        mHrany.insert(vaha, Hrana(i, j, vaha));
+    }
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+// ─── Vymaz vše ───────────────────────────────────────────────────────────────
+void MainWindow::onZmazVse()
+{
+    mScene->clear();
+    mVrcholy.clear();
+    mHrany.clear();
+    zmazMaticiSousednosti();
+    mPocetVrcholu = 0;
+    mDocastneVrcholy.clear();
+
+    ui->comboPrvniVrchol->clear();
+    ui->comboDruhyVrchol->clear();
+    ui->comboStartVrchol->clear();
+    ui->textEditMatice->clear();
+}
+
+// ─── Matrix helpers ──────────────────────────────────────────────────────────
 
 void MainWindow::vytvorMaticiSousednosti()
 {
@@ -142,6 +267,8 @@ void MainWindow::vypisMaticeSousednosti()
     ui->textEditMatice->setText(matice);
 }
 
+// ─── Dijkstra ────────────────────────────────────────────────────────────────
+
 void MainWindow::onDijkstra()
 {
     /*
@@ -167,14 +294,67 @@ void MainWindow::onDijkstra()
  * 4. KONEC
  *    - Po vycerpani mapy obsahuje pole 'dist' nejkratsi vzdalenosti.
  */
+    if (mVrcholy.empty())
+        return;
+
     initDijktra();
     vypocitajVzdalenosti();
     vypisVzdalenosti();
+
+    // Graphical visualisation: collect edges belonging to the shortest-path tree
+    std::set<std::pair<int,int>> pathEdges;
+    for (int i = 0; i < static_cast<int>(mVrcholy.size()); ++i) {
+        int pred = mVrcholy[i].mIndexPredchudce;
+        if (pred != -1) {
+            pathEdges.insert({std::min(i, pred), std::max(i, pred)});
+        }
+    }
+    kresliScene(pathEdges, Qt::green);
 }
 
 void MainWindow::onKruskalkuv()
 {
+    if (mVrcholy.empty() || mHrany.empty())
+        return;
 
+    // Union-Find
+    std::vector<int> parent(static_cast<std::size_t>(mPocetVrcholu));
+    std::vector<int> rankUF(static_cast<std::size_t>(mPocetVrcholu), 0);
+    std::iota(parent.begin(), parent.end(), 0);
+
+    auto find = [&](int x) -> int {
+        // Iterative path compression
+        while (parent[static_cast<std::size_t>(x)] != x) {
+            // Path halving
+            int next = parent[static_cast<std::size_t>(x)];
+            parent[static_cast<std::size_t>(x)] = parent[static_cast<std::size_t>(next)];
+            x = next;
+        }
+        return x;
+    };
+
+    auto unite = [&](int x, int y) -> bool {
+        int px = find(x), py = find(y);
+        if (px == py) return false;
+        if (rankUF[static_cast<std::size_t>(px)] < rankUF[static_cast<std::size_t>(py)])
+            std::swap(px, py);
+        parent[static_cast<std::size_t>(py)] = px;
+        if (rankUF[static_cast<std::size_t>(px)] == rankUF[static_cast<std::size_t>(py)])
+            ++rankUF[static_cast<std::size_t>(px)];
+        return true;
+    };
+
+    // mHrany is a QMultiMap sorted by weight (ascending) – perfect for Kruskal
+    std::set<std::pair<int,int>> mstEdges;
+    for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
+        const Hrana& h = it.value();
+        if (unite(h.mIndexA, h.mIndexB)) {
+            mstEdges.insert({std::min(h.mIndexA, h.mIndexB),
+                              std::max(h.mIndexA, h.mIndexB)});
+        }
+    }
+
+    kresliScene(mstEdges, Qt::blue);
 }
 
 void MainWindow::initDijktra()
@@ -188,7 +368,9 @@ void MainWindow::initDijktra()
     //vytvoreni vrcholu a vlozeni do vektora
     //vrcholy budu mit vzdalenost nekonecno(INT_MAX) na start vrcholu
     for (std::size_t i = 0; i < mVrcholy.size(); ++i) {
-        mVrcholy[i].mVzdalenostOdStartu = INT_MAX;
+        mVrcholy[i].mVzdalenostOdStartu   = INT_MAX;
+        mVrcholy[i].mJeVzdalenostSpoctena = false;
+        mVrcholy[i].mIndexPredchudce      = -1;
     }
     //jako start vrcholu nastavime mu vzdalenost na 0
     int startIndexVrchol = ui->comboStartVrchol->currentIndex();
@@ -261,5 +443,59 @@ void MainWindow::vypisVzdalenosti()
                 cestaKuStartu + "\n";
     }
     ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + vypis);
+}
+
+// ─── Scene drawing ───────────────────────────────────────────────────────────
+
+void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany,
+                              QColor zvyraznenaBarva)
+{
+    mScene->clear();
+
+    QFont smallFont;
+    smallFont.setPointSize(8);
+
+    // Draw edges first (vertices are drawn on top)
+    for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
+        const Hrana& h = it.value();
+        const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
+        const Vrchol& vb = mVrcholy[static_cast<std::size_t>(h.mIndexB)];
+
+        QPointF p1(va.mX, va.mY);
+        QPointF p2(vb.mX, vb.mY);
+
+        std::pair<int,int> key{std::min(h.mIndexA, h.mIndexB),
+                               std::max(h.mIndexA, h.mIndexB)};
+        bool highlighted = (zvyrazneneHrany.count(key) > 0);
+
+        QPen pen(highlighted ? zvyraznenaBarva : Qt::black,
+                 highlighted ? 3 : 1);
+        mScene->addLine(QLineF(p1, p2), pen);
+
+        // Weight label at edge midpoint
+        QPointF mid = (p1 + p2) / 2.0;
+        QGraphicsTextItem* wLabel = mScene->addText(QString::number(h.mVaha));
+        wLabel->setFont(smallFont);
+        wLabel->setPos(mid);
+        if (highlighted)
+            wLabel->setDefaultTextColor(zvyraznenaBarva);
+    }
+
+    // Draw vertices
+    const int r = 10;
+    for (int i = 0; i < static_cast<int>(mVrcholy.size()); ++i) {
+        const Vrchol& v = mVrcholy[static_cast<std::size_t>(i)];
+
+        mScene->addEllipse(v.mX - r, v.mY - r, 2 * r, 2 * r,
+                           QPen(Qt::black), QBrush(Qt::red));
+
+        QString lbl = QString::number(i) +
+                      " [" + QString::number(v.mX) +
+                      "," + QString::number(v.mY) + "]";
+        QGraphicsTextItem* txt = mScene->addText(lbl);
+        txt->setFont(smallFont);
+        txt->setPos(v.mX - r, v.mY - 2 * r - 16);
+        txt->setDefaultTextColor(Qt::darkBlue);
+    }
 }
 

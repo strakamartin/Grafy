@@ -2,9 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QGraphicsScene>
 #include <vector>   //neco jako dynamicke pole, jenom chytrejsi
 #include <map>  //sklada sa u dvojice hodnot {klic, hodnota}
+#include <set>
 #include <QMap>
+#include <climits>
 
 #include "vrchol.h"
 #include "hrana.h"
@@ -32,6 +35,10 @@ public slots:
     void onDijkstra();
     void onKruskalkuv();
 
+    void onGenerujVrcholy();
+    void onGenerujHrany();
+    void onZmazVse();
+
 private:
     Ui::MainWindow *ui;
 
@@ -45,6 +52,8 @@ private:
     //map anebo multimap nam zabezpeci automaticke trideni od nejmensi vzdalenosti po nejvacsi
     std::multimap<int, int> mDocastneVrcholy;//map nestaci, protoze vice uzlu muze mit rovnakou vzdalenost, chceme aby v mape byli vsichni
 
+    QGraphicsScene* mScene;
+
     void vytvorMaticiSousednosti();
     void zmazMaticiSousednosti();
 
@@ -55,5 +64,7 @@ private:
     void updateSousedu(int indexNejblizsihoVrcholu);
     void vypisVzdalenosti();
 
+    void kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany = {},
+                     QColor zvyraznenaBarva = Qt::green);
 };
 #endif // MAINWINDOW_H
