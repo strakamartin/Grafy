@@ -79,7 +79,11 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QSpinBox" name="spinBoxPocetVrcholu"/>
+      <widget class="QSpinBox" name="spinBoxPocetVrcholu">
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0" colspan="2">
       <widget class="QPushButton" name="buttonGenerujVrcholy">
@@ -99,6 +103,9 @@
       <widget class="QSpinBox" name="spinHranyPercenta">
        <property name="suffix">
         <string>%</string>
+       </property>
+       <property name="maximum">
+        <number>100</number>
        </property>
       </widget>
      </item>
@@ -122,6 +129,16 @@
         <string>Dijktruv alg</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="1">
+         <widget class="QComboBox" name="comboStartVrchol"/>
+        </item>
+        <item row="2" column="0" colspan="2">
+         <widget class="QPushButton" name="buttonDijkstra">
+          <property name="text">
+           <string>Dijkstruv alg</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_3">
           <property name="text">
@@ -129,15 +146,15 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="comboStartVrchol"/>
-        </item>
-        <item row="1" column="0" colspan="2">
-         <widget class="QPushButton" name="buttonDijkstra">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>Dijkstruv alg</string>
+           <string>Cíl vrhol</string>
           </property>
          </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="comboCilVrchol"/>
         </item>
        </layout>
       </widget>
