@@ -566,33 +566,51 @@ void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany
     QFont smallFont;
     smallFont.setPointSize(8);
 
-    // Draw edges first (vertices are drawn on top)
+    const QColor normalColor(180, 180, 180);   // light gray — less prominent
+    const QPen   normalPen(normalColor, 1);
+
+    // ── Pass 1: non-highlighted edges (drawn first → lowest z-order) ──────────
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
-        const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
-        const Vrchol& vb = mVrcholy[static_cast<std::size_t>(h.mIndexB)];
-
-        QPointF p1(va.mX, va.mY);
-        QPointF p2(vb.mX, vb.mY);
-
         std::pair<int,int> key{std::min(h.mIndexA, h.mIndexB),
                                std::max(h.mIndexA, h.mIndexB)};
-        bool highlighted = (zvyrazneneHrany.count(key) > 0);
+        if (zvyrazneneHrany.count(key) > 0)
+            continue;  // drawn in pass 2
 
-        QPen pen(highlighted ? zvyraznenaBarva : Qt::black,
-                 highlighted ? 3 : 1);
-        mScene->addLine(QLineF(p1, p2), pen);
+        const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
+        const Vrchol& vb = mVrcholy[static_cast<std::size_t>(h.mIndexB)];
+        QPointF p1(va.mX, va.mY), p2(vb.mX, vb.mY);
 
-        // Weight label at edge midpoint
-        QPointF mid = (p1 + p2) / 2.0;
+        mScene->addLine(QLineF(p1, p2), normalPen);
+
         QGraphicsTextItem* wLabel = mScene->addText(QString::number(h.mVaha));
         wLabel->setFont(smallFont);
-        wLabel->setPos(mid);
-        if (highlighted)
-            wLabel->setDefaultTextColor(zvyraznenaBarva);
+        wLabel->setPos((p1 + p2) / 2.0);
+        wLabel->setDefaultTextColor(normalColor);
     }
 
-    // Draw vertices
+    // ── Pass 2: highlighted edges (drawn on top of normal edges) ─────────────
+    QPen highlightPen(zvyraznenaBarva, 3);
+    for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
+        const Hrana& h = it.value();
+        std::pair<int,int> key{std::min(h.mIndexA, h.mIndexB),
+                               std::max(h.mIndexA, h.mIndexB)};
+        if (zvyrazneneHrany.count(key) == 0)
+            continue;  // already drawn in pass 1
+
+        const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
+        const Vrchol& vb = mVrcholy[static_cast<std::size_t>(h.mIndexB)];
+        QPointF p1(va.mX, va.mY), p2(vb.mX, vb.mY);
+
+        mScene->addLine(QLineF(p1, p2), highlightPen);
+
+        QGraphicsTextItem* wLabel = mScene->addText(QString::number(h.mVaha));
+        wLabel->setFont(smallFont);
+        wLabel->setPos((p1 + p2) / 2.0);
+        wLabel->setDefaultTextColor(zvyraznenaBarva);
+    }
+
+    // ── Pass 3: vertices (always on top) ─────────────────────────────────────
     const int r = 10;
     for (int i = 0; i < static_cast<int>(mVrcholy.size()); ++i) {
         const Vrchol& v = mVrcholy[static_cast<std::size_t>(i)];
