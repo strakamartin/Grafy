@@ -8,6 +8,7 @@
 #include <set>
 #include <QMap>
 #include <climits>
+#include <cmath>
 
 #include "vrchol.h"
 #include "hrana.h"
@@ -38,6 +39,9 @@ public slots:
     void onGenerujVrcholy();
     void onGenerujHrany();
     void onZmazVse();
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
     Ui::MainWindow *ui;

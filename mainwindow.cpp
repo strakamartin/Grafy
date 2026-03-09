@@ -7,8 +7,10 @@
 #include <QGraphicsTextItem>
 #include <QRandomGenerator>
 #include <QFont>
+#include <QWheelEvent>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     mScene = new QGraphicsScene(this);
     ui->graphicsView->setScene(mScene);
+    ui->graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    ui->graphicsView->installEventFilter(this);
 
     connect(ui->buttonImportGraf, &QPushButton::clicked, this, &MainWindow::onImportGraf);
     connect(ui->spinBoxPocetVrcholu, &QSpinBox::valueChanged, this, &MainWindow::onPocetVrcholu);
@@ -52,10 +56,12 @@ void MainWindow::onPocetVrcholu()
     ui->comboPrvniVrchol->clear();
     ui->comboDruhyVrchol->clear();
     ui->comboStartVrchol->clear();
+    ui->comboCilVrchol->clear();
     for (int i = 0; i < mPocetVrcholu; ++i) {
         ui->comboPrvniVrchol->addItem(QString::number(i));
         ui->comboDruhyVrchol->addItem(QString::number(i));
         ui->comboStartVrchol->addItem(QString::number(i));
+        ui->comboCilVrchol->addItem(QString::number(i));
     }
 }
 
@@ -133,6 +139,7 @@ void MainWindow::onGenerujVrcholy()
     ui->comboPrvniVrchol->clear();
     ui->comboDruhyVrchol->clear();
     ui->comboStartVrchol->clear();
+    ui->comboCilVrchol->clear();
 
     // Determine drawing area (leave a margin of 30 px on each side)
     const int margin = 30;
@@ -151,6 +158,7 @@ void MainWindow::onGenerujVrcholy()
         ui->comboPrvniVrchol->addItem(QString::number(i));
         ui->comboDruhyVrchol->addItem(QString::number(i));
         ui->comboStartVrchol->addItem(QString::number(i));
+        ui->comboCilVrchol->addItem(QString::number(i));
     }
 
     kresliScene();
@@ -191,9 +199,13 @@ void MainWindow::onGenerujHrany()
     int targetEdges = static_cast<int>(allEdges.size() * percentage / 100.0);
 
     for (int k = 0; k < targetEdges; ++k) {
-        int i    = allEdges[k].first;
-        int j    = allEdges[k].second;
-        int vaha = static_cast<int>(QRandomGenerator::global()->bounded(50)) + 1; // 1–50
+        int i = allEdges[k].first;
+        int j = allEdges[k].second;
+
+        // Weight = rounded Euclidean distance between the two vertices
+        double dx = mVrcholy[i].mX - mVrcholy[j].mX;
+        double dy = mVrcholy[i].mY - mVrcholy[j].mY;
+        int vaha = qMax(1, static_cast<int>(std::round(std::sqrt(dx*dx + dy*dy))));
 
         mMaticeSousednosti[i][j] = vaha;
         mMaticeSousednosti[j][i] = vaha;
@@ -222,7 +234,25 @@ void MainWindow::onZmazVse()
     ui->comboPrvniVrchol->clear();
     ui->comboDruhyVrchol->clear();
     ui->comboStartVrchol->clear();
+    ui->comboCilVrchol->clear();
     ui->textEditMatice->clear();
+}
+
+// ─── Zoom via Ctrl+scroll ─────────────────────────────────────────────────────
+bool MainWindow::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == ui->graphicsView && event->type() == QEvent::Wheel) {
+        QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+        if (wheelEvent->modifiers() & Qt::ControlModifier) {
+            const double scaleFactor = 1.15;
+            if (wheelEvent->angleDelta().y() > 0)
+                ui->graphicsView->scale(scaleFactor, scaleFactor);
+            else
+                ui->graphicsView->scale(1.0 / scaleFactor, 1.0 / scaleFactor);
+            return true; // event consumed
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 // ─── Matrix helpers ──────────────────────────────────────────────────────────
@@ -299,16 +329,34 @@ void MainWindow::onDijkstra()
 
     initDijktra();
     vypocitajVzdalenosti();
-    vypisVzdalenosti();
 
-    // Graphical visualisation: collect edges belonging to the shortest-path tree
+    // Reconstruct path from target back to start
+    int cilIndex = ui->comboCilVrchol->currentIndex();
+
     std::set<std::pair<int,int>> pathEdges;
-    for (int i = 0; i < static_cast<int>(mVrcholy.size()); ++i) {
-        int pred = mVrcholy[i].mIndexPredchudce;
-        if (pred != -1) {
-            pathEdges.insert({std::min(i, pred), std::max(i, pred)});
-        }
+    int cur = cilIndex;
+    while (cur != -1 && mVrcholy[cur].mIndexPredchudce != -1) {
+        int pred = mVrcholy[cur].mIndexPredchudce;
+        pathEdges.insert({std::min(cur, pred), std::max(cur, pred)});
+        cur = pred;
     }
+
+    // Show the path in text
+    QString cestaText = "Cesta: ";
+    QVector<int> pathNodes;
+    cur = cilIndex;
+    while (cur != -1) {
+        pathNodes.prepend(cur);
+        cur = mVrcholy[cur].mIndexPredchudce;
+    }
+    for (int k = 0; k < pathNodes.size(); ++k) {
+        if (k > 0) cestaText += " -> ";
+        cestaText += QString::number(pathNodes[k]);
+    }
+    int dist = mVrcholy[cilIndex].mVzdalenostOdStartu;
+    cestaText += "\nVzdalenost: " + (dist == INT_MAX ? QString("nedosazitelny") : QString::number(dist));
+    ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + cestaText);
+
     kresliScene(pathEdges, Qt::green);
 }
 
