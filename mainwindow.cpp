@@ -25,7 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     ui->graphicsView->installEventFilter(this);
 
-    connect(ui->buttonImportGraf, &QPushButton::clicked, this, &MainWindow::onImportGraf);
     connect(ui->spinBoxPocetVrcholu, &QSpinBox::valueChanged, this, &MainWindow::onPocetVrcholu);
     connect(ui->pushButtonPridejHranu, &QPushButton::clicked, this, &MainWindow::onPridejHranu);
 
@@ -140,48 +139,48 @@ bool MainWindow::removeEdge(int x, int y)
     return true;
 }
 
-void MainWindow::onImportGraf()
-{
-    int pocetVrcholu = 4;
-    ui->spinBoxPocetVrcholu->setValue(pocetVrcholu);
+// void MainWindow::onImportGraf()
+// {
+//     int pocetVrcholu = 4;
+//     ui->spinBoxPocetVrcholu->setValue(pocetVrcholu);
 
-    //init matice
-    mMaticeSousednosti[0][1] = 6;
-    mMaticeSousednosti[1][0] = 6;
-    mMaticeSousednosti[0][2] = 1;
-    mMaticeSousednosti[2][0] = 1;
-    mMaticeSousednosti[0][3] = 5;
-    mMaticeSousednosti[3][0] = 5;
-    mMaticeSousednosti[1][2] = 7;
-    mMaticeSousednosti[2][1] = 7;
-    mMaticeSousednosti[3][2] = 2;
-    mMaticeSousednosti[2][3] = 2;
-    vypisMaticeSousednosti();
+//     //init matice
+//     mMaticeSousednosti[0][1] = 6;
+//     mMaticeSousednosti[1][0] = 6;
+//     mMaticeSousednosti[0][2] = 1;
+//     mMaticeSousednosti[2][0] = 1;
+//     mMaticeSousednosti[0][3] = 5;
+//     mMaticeSousednosti[3][0] = 5;
+//     mMaticeSousednosti[1][2] = 7;
+//     mMaticeSousednosti[2][1] = 7;
+//     mMaticeSousednosti[3][2] = 2;
+//     mMaticeSousednosti[2][3] = 2;
+//     vypisMaticeSousednosti();
 
-    qDebug() << "dddddddddddddddddddddddddd";
+//     qDebug() << "dddddddddddddddddddddddddd";
 
-    //init seznam vrcholu
-    for (int i = 0; i < pocetVrcholu; ++i) {
-        Vrchol tmp;
-        mVrcholy.push_back(tmp);  //pridani na konec
-        qDebug() << tmp.mX << " " << tmp.mY;
-    }
+//     //init seznam vrcholu
+//     for (int i = 0; i < pocetVrcholu; ++i) {
+//         Vrchol tmp;
+//         mVrcholy.push_back(tmp);  //pridani na konec
+//         qDebug() << tmp.mX << " " << tmp.mY;
+//     }
 
-    //pridani doseznamNaslednikuiku, setriduje podle vahy hrany
-    mVrcholy[0].seznamNasledniku.insert(1, &mVrcholy[2]);
-    mVrcholy[0].seznamNasledniku.insert(5, &mVrcholy[3]);
-    mVrcholy[0].seznamNasledniku.insert(6, &mVrcholy[1]);
+//     //pridani doseznamNaslednikuiku, setriduje podle vahy hrany
+//     mVrcholy[0].seznamNasledniku.insert(1, &mVrcholy[2]);
+//     mVrcholy[0].seznamNasledniku.insert(5, &mVrcholy[3]);
+//     mVrcholy[0].seznamNasledniku.insert(6, &mVrcholy[1]);
 
-    mVrcholy[1].seznamNasledniku.insert(6, &mVrcholy[0]);
-    mVrcholy[1].seznamNasledniku.insert(7, &mVrcholy[2]);
+//     mVrcholy[1].seznamNasledniku.insert(6, &mVrcholy[0]);
+//     mVrcholy[1].seznamNasledniku.insert(7, &mVrcholy[2]);
 
-    mVrcholy[2].seznamNasledniku.insert(1, &mVrcholy[0]);
-    mVrcholy[2].seznamNasledniku.insert(2, &mVrcholy[3]);
-    mVrcholy[2].seznamNasledniku.insert(7 ,&mVrcholy[1]);
+//     mVrcholy[2].seznamNasledniku.insert(1, &mVrcholy[0]);
+//     mVrcholy[2].seznamNasledniku.insert(2, &mVrcholy[3]);
+//     mVrcholy[2].seznamNasledniku.insert(7 ,&mVrcholy[1]);
 
-    mVrcholy[3].seznamNasledniku.insert(2, &mVrcholy[2]);
-    mVrcholy[3].seznamNasledniku.insert(5, &mVrcholy[0]);
-}
+//     mVrcholy[3].seznamNasledniku.insert(2, &mVrcholy[2]);
+//     mVrcholy[3].seznamNasledniku.insert(5, &mVrcholy[0]);
+// }
 
 // ─── Generuj vrcholy ─────────────────────────────────────────────────────────
 void MainWindow::onGenerujVrcholy()

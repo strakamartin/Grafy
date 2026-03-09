@@ -32,7 +32,7 @@ public:
 public slots:
     void onPocetVrcholu();
     void onPridejHranu();
-    void onImportGraf();
+    //void onImportGraf();
     void onDijkstra();
     void onKruskalkuv();
 
