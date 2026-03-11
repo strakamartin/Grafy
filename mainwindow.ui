@@ -99,6 +99,27 @@
        </property>
       </widget>
      </item>
+     <item row="11" column="0">
+      <widget class="QPushButton" name="buttonImportVrcholu">
+       <property name="text">
+        <string>Import vrcholu</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="1">
+      <widget class="QPushButton" name="buttonImportHrany">
+       <property name="text">
+        <string>Import hrany</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="0" colspan="2">
+      <widget class="QPushButton" name="buttonExportGrafu">
+       <property name="text">
+        <string>Export grafu</string>
+       </property>
+      </widget>
+     </item>
      <item row="8" column="0" colspan="2">
       <widget class="QGroupBox" name="groupBox">
        <property name="title">

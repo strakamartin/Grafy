@@ -8,6 +8,9 @@
 #include <QRandomGenerator>
 #include <QFont>
 #include <QWheelEvent>
+#include <QFile>
+#include <QTextStream>
+#include <QMessageBox>
 #include <algorithm>
 #include <numeric>
 #include <cmath>
@@ -35,6 +38,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->buttonGenerujHrany, &QPushButton::clicked, this, &MainWindow::onGenerujHrany);
     connect(ui->buttonZmazVse, &QPushButton::clicked, this, &MainWindow::onZmazVse);
     connect(ui->pushButtonSmazHranu, &QPushButton::clicked, this, &MainWindow::onSmazHranu);
+
+    connect(ui->buttonImportVrcholu, &QPushButton::clicked, this, &MainWindow::onImportVrcholu);
+    connect(ui->buttonImportHrany, &QPushButton::clicked, this, &MainWindow::onImportHrany);
+    connect(ui->buttonExportGrafu, &QPushButton::clicked, this, &MainWindow::onExportGrafu);
 }
 
 MainWindow::~MainWindow()
@@ -298,6 +305,166 @@ void MainWindow::onZmazVse()
     ui->comboStartVrchol->clear();
     ui->comboCilVrchol->clear();
     ui->textEditMatice->clear();
+}
+
+// ─── Import vrcholu z Vrcholy.txt ────────────────────────────────────────────
+void MainWindow::onImportVrcholu()
+{
+    QFile file("Vrcholy.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Import vrcholu", "Nelze otevrit soubor Vrcholy.txt");
+        return;
+    }
+
+    // Parse lines: id x y
+    struct VrcholZesouboru { int id, x, y; };
+    QVector<VrcholZesouboru> nacitaneVrcholy;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty())
+            continue;
+        QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.size() < 3)
+            continue;
+        bool okId, okX, okY;
+        int id = parts[0].toInt(&okId);
+        int x  = parts[1].toInt(&okX);
+        int y  = parts[2].toInt(&okY);
+        if (okId && okX && okY)
+            nacitaneVrcholy.append({id, x, y});
+    }
+    file.close();
+
+    if (nacitaneVrcholy.isEmpty())
+        return;
+
+    // Sort by ID so that the sequential array index matches usage in Hrany.txt
+    std::sort(nacitaneVrcholy.begin(), nacitaneVrcholy.end(),
+              [](const VrcholZesouboru& a, const VrcholZesouboru& b){ return a.id < b.id; });
+
+    // Clear current state
+    mScene->clear();
+    mVrcholy.clear();
+    mHrany.clear();
+    zmazMaticiSousednosti();
+    mDocastneVrcholy.clear();
+    ui->comboPrvniVrchol->clear();
+    ui->comboDruhyVrchol->clear();
+    ui->comboStartVrchol->clear();
+    ui->comboCilVrchol->clear();
+
+    mPocetVrcholu = nacitaneVrcholy.size();
+    // Update spinbox without triggering onPocetVrcholu()
+    {
+        QSignalBlocker blocker(ui->spinBoxPocetVrcholu);
+        ui->spinBoxPocetVrcholu->setValue(mPocetVrcholu);
+    }
+    mVrcholy.reserve(mPocetVrcholu);
+    vytvorMaticiSousednosti();
+
+    for (int i = 0; i < mPocetVrcholu; ++i) {
+        Vrchol v;
+        v.mX = nacitaneVrcholy[i].x;
+        v.mY = nacitaneVrcholy[i].y;
+        mVrcholy.push_back(v);
+
+        ui->comboPrvniVrchol->addItem(QString::number(i));
+        ui->comboDruhyVrchol->addItem(QString::number(i));
+        ui->comboStartVrchol->addItem(QString::number(i));
+        ui->comboCilVrchol->addItem(QString::number(i));
+    }
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+// ─── Import hrany z Hrany.txt ────────────────────────────────────────────────
+void MainWindow::onImportHrany()
+{
+    if (mVrcholy.empty() || mMaticeSousednosti == nullptr) {
+        QMessageBox::warning(this, "Import hrany", "Nejprve importujte nebo vygenerujte vrcholy.");
+        return;
+    }
+
+    QFile file("Hrany.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Import hrany", "Nelze otevrit soubor Hrany.txt");
+        return;
+    }
+
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty())
+            continue;
+        QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.size() < 2)
+            continue;
+        bool okA, okB;
+        int idA = parts[0].toInt(&okA);
+        int idB = parts[1].toInt(&okB);
+        if (!okA || !okB)
+            continue;
+        if (idA < 0 || idA >= mPocetVrcholu || idB < 0 || idB >= mPocetVrcholu)
+            continue;
+        if (idA == idB)
+            continue;
+
+        // Skip if edge already exists
+        if (mMaticeSousednosti[idA][idB] != 0)
+            continue;
+
+        double dx = mVrcholy[idA].mX - mVrcholy[idB].mX;
+        double dy = mVrcholy[idA].mY - mVrcholy[idB].mY;
+        int vaha = qMax(1, static_cast<int>(std::round(std::sqrt(dx*dx + dy*dy))));
+
+        mMaticeSousednosti[idA][idB] = vaha;
+        mMaticeSousednosti[idB][idA] = vaha;
+
+        mVrcholy[idA].seznamNasledniku.insert(vaha, &mVrcholy[idB]);
+        mVrcholy[idB].seznamNasledniku.insert(vaha, &mVrcholy[idA]);
+
+        mHrany.insert(vaha, Hrana(idA, idB, vaha));
+    }
+    file.close();
+
+    kresliScene();
+    vypisMaticeSousednosti();
+}
+
+// ─── Export grafu do Vrcholy.txt a Hrany.txt ─────────────────────────────────
+void MainWindow::onExportGrafu()
+{
+    // Export vertices
+    {
+        QFile file("Vrcholy.txt");
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::warning(this, "Export grafu", "Nelze zapsat do souboru Vrcholy.txt");
+            return;
+        }
+        QTextStream out(&file);
+        for (int i = 0; i < mPocetVrcholu; ++i)
+            out << i << " " << mVrcholy[i].mX << " " << mVrcholy[i].mY << "\n";
+    }
+
+    // Export edges (each undirected edge written once: smaller index first)
+    {
+        QFile file("Hrany.txt");
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::warning(this, "Export grafu", "Nelze zapsat do souboru Hrany.txt");
+            return;
+        }
+        QTextStream out(&file);
+        for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
+            const Hrana& h = it.value();
+            int a = std::min(h.mIndexA, h.mIndexB);
+            int b = std::max(h.mIndexA, h.mIndexB);
+            out << a << " " << b << "\n";
+        }
+    }
+
+    QMessageBox::information(this, "Export grafu", "Graf byl exportovan do Vrcholy.txt a Hrany.txt");
 }
 
 // ─── Zoom via Ctrl+scroll ─────────────────────────────────────────────────────

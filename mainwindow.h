@@ -41,6 +41,10 @@ public slots:
     void onZmazVse();
     void onSmazHranu();
 
+    void onImportVrcholu();
+    void onImportHrany();
+    void onExportGrafu();
+
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
