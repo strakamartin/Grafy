@@ -20,6 +20,7 @@ HEADERS += \
     vrchol.h
 
 FORMS += \
+    Dijkstra.ui \
     mainwindow.ui
 
 # Default rules for deployment.

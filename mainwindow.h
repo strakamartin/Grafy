@@ -32,7 +32,6 @@ public:
 public slots:
     void onPocetVrcholu();
     void onPridejHranu();
-    //void onImportGraf();
     void onDijkstra();
     void onKruskalkuv();
 
@@ -53,7 +52,7 @@ private:
 
     int mPocetVrcholu;
     int** mMaticeSousednosti;  //dvorozmerne pole
-    std::vector<Vrchol> mVrcholy;  //vektor je take vylepsene dynamicke pole, kde se nemusite starat o alokaciu a dealokaciu
+    std::vector<Vrchol> mVrcholy;
     QMultiMap<int, Hrana> mHrany;
 
     //v mape je klic a hodnota, klicem bude vzdalenost od pocatecneho vrcholu
