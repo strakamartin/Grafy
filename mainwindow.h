@@ -5,7 +5,6 @@
 #include <QGraphicsScene>
 #include <vector>   //neco jako dynamicke pole, jenom chytrejsi
 #include <map>  //sklada sa u dvojice hodnot {klic, hodnota}
-#include <set>
 #include <QMap>
 #include <climits>
 #include <cmath>
@@ -72,8 +71,10 @@ private:
     void updateSousedu(int indexNejblizsihoVrcholu);
     void vypisVzdalenosti();
 
-    void kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany = {},
-                     QColor zvyraznenaBarva = Qt::green);
+    QList<QPair<int,int>> mZvyrazneneHrany;
+    QColor mZvyraznenaBarva = Qt::green;
+
+    void vykresliGraf();
 
     // Removes the undirected edge (x,y) from all data structures; does nothing
     // if x == y or the edge does not exist. Returns true if an edge was removed.

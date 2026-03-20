@@ -100,7 +100,8 @@ void MainWindow::onPridejHranu()
 
     mHrany.insert(vaha, Hrana(x, y, vaha));
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
@@ -116,7 +117,8 @@ void MainWindow::onSmazHranu()
     if (!removeEdge(x, y))
         return;
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
@@ -188,11 +190,12 @@ void MainWindow::onGenerujVrcholy()
         ui->comboCilVrchol->addItem(QString::number(i));
     }
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
-// ─── Generuj hrany ───────────────────────────────────────────────────────────
+
 void MainWindow::onGenerujHrany()
 {
     if (mVrcholy.empty() || mMaticeSousednosti == nullptr || mPocetVrcholu < 2)
@@ -244,7 +247,8 @@ void MainWindow::onGenerujHrany()
         mHrany.insert(vaha, Hrana(i, j, vaha));
     }
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
@@ -333,7 +337,8 @@ void MainWindow::onImportVrcholu()
         ui->comboCilVrchol->addItem(QString::number(i));
     }
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
@@ -387,7 +392,8 @@ void MainWindow::onImportHrany()
     }
     file.close();
 
-    kresliScene();
+    mZvyrazneneHrany.clear();
+    vykresliGraf();
     vypisMaticeSousednosti();
 }
 
@@ -520,11 +526,11 @@ void MainWindow::onDijkstra()
     // Reconstruct path from target back to start
     int cilIndex = ui->comboCilVrchol->currentIndex();
 
-    std::set<std::pair<int,int>> pathEdges;
+    mZvyrazneneHrany.clear();
     int cur = cilIndex;
     while (cur != -1 && mVrcholy[cur].mIndexPredchudce != -1) {
         int pred = mVrcholy[cur].mIndexPredchudce;
-        pathEdges.insert({std::min(cur, pred), std::max(cur, pred)});
+        mZvyrazneneHrany.append({std::min(cur, pred), std::max(cur, pred)});
         cur = pred;
     }
 
@@ -544,7 +550,8 @@ void MainWindow::onDijkstra()
     cestaText += "\nVzdalenost: " + (dist == INT_MAX ? QString("nedosazitelny") : QString::number(dist));
     ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + cestaText);
 
-    kresliScene(pathEdges, Qt::green);
+    mZvyraznenaBarva = Qt::green;
+    vykresliGraf();
 }
 
 void MainWindow::onKruskalkuv()
@@ -580,16 +587,17 @@ void MainWindow::onKruskalkuv()
     };
 
     // mHrany is a QMultiMap sorted by weight (ascending) – perfect for Kruskal
-    std::set<std::pair<int,int>> mstEdges;
+    mZvyrazneneHrany.clear();
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
         if (unite(h.mIndexA, h.mIndexB)) {
-            mstEdges.insert({std::min(h.mIndexA, h.mIndexB),
-                              std::max(h.mIndexA, h.mIndexB)});
+            mZvyrazneneHrany.append({std::min(h.mIndexA, h.mIndexB),
+                                     std::max(h.mIndexA, h.mIndexB)});
         }
     }
 
-    kresliScene(mstEdges, Qt::blue);
+    mZvyraznenaBarva = Qt::blue;
+    vykresliGraf();
 }
 
 void MainWindow::initDijktra()
@@ -682,8 +690,7 @@ void MainWindow::vypisVzdalenosti()
 
 // ─── Scene drawing ───────────────────────────────────────────────────────────
 
-void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany,
-                              QColor zvyraznenaBarva)
+void MainWindow::vykresliGraf()
 {
     mScene->clear();
 
@@ -693,12 +700,15 @@ void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany
     const QColor normalColor(180, 180, 180);   // light gray — less prominent
     const QPen   normalPen(normalColor, 1);
 
+    // Build a lookup set from the QList for O(1) membership tests
+    const QSet<QPair<int,int>> zvyrazneneSet(mZvyrazneneHrany.cbegin(), mZvyrazneneHrany.cend());
+
     // ── Pass 1: non-highlighted edges (drawn first → lowest z-order) ──────────
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
-        std::pair<int,int> key{std::min(h.mIndexA, h.mIndexB),
-                               std::max(h.mIndexA, h.mIndexB)};
-        if (zvyrazneneHrany.count(key) > 0)
+        QPair<int,int> key{std::min(h.mIndexA, h.mIndexB),
+                           std::max(h.mIndexA, h.mIndexB)};
+        if (zvyrazneneSet.contains(key))
             continue;  // drawn in pass 2
 
         const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
@@ -714,12 +724,12 @@ void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany
     }
 
     // ── Pass 2: highlighted edges (drawn on top of normal edges) ─────────────
-    QPen highlightPen(zvyraznenaBarva, 3);
+    QPen highlightPen(mZvyraznenaBarva, 3);
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
-        std::pair<int,int> key{std::min(h.mIndexA, h.mIndexB),
-                               std::max(h.mIndexA, h.mIndexB)};
-        if (zvyrazneneHrany.count(key) == 0)
+        QPair<int,int> key{std::min(h.mIndexA, h.mIndexB),
+                           std::max(h.mIndexA, h.mIndexB)};
+        if (!zvyrazneneSet.contains(key))
             continue;  // already drawn in pass 1
 
         const Vrchol& va = mVrcholy[static_cast<std::size_t>(h.mIndexA)];
@@ -731,7 +741,7 @@ void MainWindow::kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany
         QGraphicsTextItem* wLabel = mScene->addText(QString::number(h.mVaha));
         wLabel->setFont(smallFont);
         wLabel->setPos((p1 + p2) / 2.0);
-        wLabel->setDefaultTextColor(zvyraznenaBarva);
+        wLabel->setDefaultTextColor(mZvyraznenaBarva);
     }
 
     // ── Pass 3: vertices (always on top) ─────────────────────────────────────
