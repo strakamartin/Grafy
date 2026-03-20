@@ -100,7 +100,6 @@ void MainWindow::onPridejHranu()
 
     mHrany.insert(vaha, Hrana(x, y, vaha));
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -117,7 +116,6 @@ void MainWindow::onSmazHranu()
     if (!removeEdge(x, y))
         return;
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -190,7 +188,6 @@ void MainWindow::onGenerujVrcholy()
         ui->comboCilVrchol->addItem(QString::number(i));
     }
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -247,7 +244,6 @@ void MainWindow::onGenerujHrany()
         mHrany.insert(vaha, Hrana(i, j, vaha));
     }
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -337,7 +333,6 @@ void MainWindow::onImportVrcholu()
         ui->comboCilVrchol->addItem(QString::number(i));
     }
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -392,7 +387,6 @@ void MainWindow::onImportHrany()
     }
     file.close();
 
-    mZvyrazneneHrany.clear();
     vykresliGraf();
     vypisMaticeSousednosti();
 }
@@ -526,11 +520,11 @@ void MainWindow::onDijkstra()
     // Reconstruct path from target back to start
     int cilIndex = ui->comboCilVrchol->currentIndex();
 
-    mZvyrazneneHrany.clear();
+    QList<QPair<int,int>> pathEdges;
     int cur = cilIndex;
     while (cur != -1 && mVrcholy[cur].mIndexPredchudce != -1) {
         int pred = mVrcholy[cur].mIndexPredchudce;
-        mZvyrazneneHrany.append({std::min(cur, pred), std::max(cur, pred)});
+        pathEdges.append({std::min(cur, pred), std::max(cur, pred)});
         cur = pred;
     }
 
@@ -550,8 +544,7 @@ void MainWindow::onDijkstra()
     cestaText += "\nVzdalenost: " + (dist == INT_MAX ? QString("nedosazitelny") : QString::number(dist));
     ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + cestaText);
 
-    mZvyraznenaBarva = Qt::green;
-    vykresliGraf();
+    vykresliGraf(pathEdges, Qt::green);
 }
 
 void MainWindow::onKruskalkuv()
@@ -587,17 +580,16 @@ void MainWindow::onKruskalkuv()
     };
 
     // mHrany is a QMultiMap sorted by weight (ascending) – perfect for Kruskal
-    mZvyrazneneHrany.clear();
+    QList<QPair<int,int>> mstEdges;
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
         if (unite(h.mIndexA, h.mIndexB)) {
-            mZvyrazneneHrany.append({std::min(h.mIndexA, h.mIndexB),
-                                     std::max(h.mIndexA, h.mIndexB)});
+            mstEdges.append({std::min(h.mIndexA, h.mIndexB),
+                             std::max(h.mIndexA, h.mIndexB)});
         }
     }
 
-    mZvyraznenaBarva = Qt::blue;
-    vykresliGraf();
+    vykresliGraf(mstEdges, Qt::blue);
 }
 
 void MainWindow::initDijktra()
@@ -690,7 +682,7 @@ void MainWindow::vypisVzdalenosti()
 
 // ─── Scene drawing ───────────────────────────────────────────────────────────
 
-void MainWindow::vykresliGraf()
+void MainWindow::vykresliGraf(const QList<QPair<int,int>>& zvyrazneneHrany, QColor zvyraznenaBarva)
 {
     mScene->clear();
 
@@ -701,7 +693,7 @@ void MainWindow::vykresliGraf()
     const QPen   normalPen(normalColor, 1);
 
     // Build a lookup set from the QList for O(1) membership tests
-    const QSet<QPair<int,int>> zvyrazneneSet(mZvyrazneneHrany.cbegin(), mZvyrazneneHrany.cend());
+    const QSet<QPair<int,int>> zvyrazneneSet(zvyrazneneHrany.cbegin(), zvyrazneneHrany.cend());
 
     // ── Pass 1: non-highlighted edges (drawn first → lowest z-order) ──────────
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
@@ -724,7 +716,7 @@ void MainWindow::vykresliGraf()
     }
 
     // ── Pass 2: highlighted edges (drawn on top of normal edges) ─────────────
-    QPen highlightPen(mZvyraznenaBarva, 3);
+    QPen highlightPen(zvyraznenaBarva, 3);
     for (auto it = mHrany.cbegin(); it != mHrany.cend(); ++it) {
         const Hrana& h = it.value();
         QPair<int,int> key{std::min(h.mIndexA, h.mIndexB),
@@ -741,7 +733,7 @@ void MainWindow::vykresliGraf()
         QGraphicsTextItem* wLabel = mScene->addText(QString::number(h.mVaha));
         wLabel->setFont(smallFont);
         wLabel->setPos((p1 + p2) / 2.0);
-        wLabel->setDefaultTextColor(mZvyraznenaBarva);
+        wLabel->setDefaultTextColor(zvyraznenaBarva);
     }
 
     // ── Pass 3: vertices (always on top) ─────────────────────────────────────

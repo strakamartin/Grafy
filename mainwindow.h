@@ -71,10 +71,7 @@ private:
     void updateSousedu(int indexNejblizsihoVrcholu);
     void vypisVzdalenosti();
 
-    QList<QPair<int,int>> mZvyrazneneHrany;
-    QColor mZvyraznenaBarva = Qt::green;
-
-    void vykresliGraf();
+    void vykresliGraf(const QList<QPair<int,int>>& zvyrazneneHrany = {}, QColor zvyraznenaBarva = Qt::green);
 
     // Removes the undirected edge (x,y) from all data structures; does nothing
     // if x == y or the edge does not exist. Returns true if an edge was removed.
