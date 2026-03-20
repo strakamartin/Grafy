@@ -1,6 +1,6 @@
 #include "hrana.h"
 
-Hrana::Hrana() : a(nullptr), b(nullptr), mVaha(0), mIndexA(-1), mIndexB(-1) {}
+Hrana::Hrana() : a(nullptr), b(nullptr), mVaha(0), mIdA(-1), mIdB(-1) {}
 
-Hrana::Hrana(int indexA, int indexB, int vaha)
-    : a(nullptr), b(nullptr), mVaha(vaha), mIndexA(indexA), mIndexB(indexB) {}
+Hrana::Hrana(int idA, int idB, int vaha)
+    : a(nullptr), b(nullptr), mVaha(vaha), mIdA(idA), mIdB(idB) {}

@@ -8,6 +8,7 @@ struct Vrchol
     Vrchol();
     QMultiMap<int, Vrchol*> seznamNasledniku;  //vzdalenost k vrcholu a vrchol
 
+    int mId;
     int mVzdalenostOdStartu;
     bool mJeVzdalenostSpoctena;
 

@@ -47,7 +47,8 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     zmazMaticiSousednosti();
-
+    qDeleteAll(mHrany);
+    qDeleteAll(mVrcholy);
     delete ui;
 }
 
