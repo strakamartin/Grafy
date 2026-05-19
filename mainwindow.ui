@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>923</width>
-    <height>602</height>
+    <width>958</width>
+    <height>692</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,8 +25,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>923</width>
-     <height>22</height>
+     <width>958</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -41,57 +41,6 @@
       <widget class="QPushButton" name="buttonImportHrany">
        <property name="text">
         <string>Import hrany</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0" colspan="2">
-      <widget class="QTextEdit" name="textEditMatice"/>
-     </item>
-     <item row="4" column="1">
-      <widget class="QSpinBox" name="spinHranyPercenta">
-       <property name="suffix">
-        <string>%</string>
-       </property>
-       <property name="maximum">
-        <number>100</number>
-       </property>
-       <property name="value">
-        <number>20</number>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="0" colspan="2">
-      <widget class="QPushButton" name="buttonZmazVse">
-       <property name="text">
-        <string>Vymaz vse</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Pocet vrcholu</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0" colspan="2">
-      <widget class="QPushButton" name="buttonGenerujVrcholy">
-       <property name="text">
-        <string>Generuj vrcholy</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="0" colspan="2">
-      <widget class="QPushButton" name="buttonKurskalkuv">
-       <property name="text">
-        <string>Kurskalkuv. alg</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0" colspan="2">
-      <widget class="QPushButton" name="buttonGenerujHrany">
-       <property name="text">
-        <string>Generuj hrany</string>
        </property>
       </widget>
      </item>
@@ -131,13 +80,58 @@
        </layout>
       </widget>
      </item>
-     <item row="6" column="1">
-      <widget class="QComboBox" name="comboDruhyVrchol"/>
-     </item>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="buttonImportVrcholu">
+     <item row="7" column="0">
+      <widget class="QPushButton" name="pushButtonPridejHranu">
        <property name="text">
-        <string>Import vrcholu</string>
+        <string>Pridej Hranu</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0" colspan="2">
+      <widget class="QPushButton" name="buttonZmazVse">
+       <property name="text">
+        <string>Vymaz vse</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QPushButton" name="buttonGenerujHrany">
+       <property name="text">
+        <string>Generuj hrany</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Pocet vrcholu</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0" colspan="2">
+      <widget class="QTextEdit" name="textEditVlevo"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="QComboBox" name="comboPrvniVrchol"/>
+     </item>
+     <item row="10" column="0" colspan="2">
+      <widget class="QPushButton" name="buttonKurskalkuv">
+       <property name="text">
+        <string>Kurskalkuv. alg</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QPushButton" name="pushButtonSmazHranu">
+       <property name="text">
+        <string>Smaz hranu</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" colspan="2">
+      <widget class="QPushButton" name="buttonGenerujVrcholy">
+       <property name="text">
+        <string>Generuj vrcholy</string>
        </property>
       </widget>
      </item>
@@ -151,13 +145,6 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
-      <widget class="QPushButton" name="pushButtonPridejHranu">
-       <property name="text">
-        <string>Pridej Hranu</string>
-       </property>
-      </widget>
-     </item>
      <item row="4" column="0">
       <widget class="QLabel" name="label_4">
        <property name="text">
@@ -165,15 +152,21 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
-      <widget class="QComboBox" name="comboPrvniVrchol"/>
-     </item>
-     <item row="7" column="1">
-      <widget class="QPushButton" name="pushButtonSmazHranu">
-       <property name="text">
-        <string>Smaz hranu</string>
+     <item row="4" column="1">
+      <widget class="QSpinBox" name="spinHranyPercenta">
+       <property name="suffix">
+        <string>%</string>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+       <property name="value">
+        <number>20</number>
        </property>
       </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QComboBox" name="comboDruhyVrchol"/>
      </item>
      <item row="1" column="0">
       <widget class="QPushButton" name="buttonExportGrafu">
@@ -181,6 +174,25 @@
         <string>Export grafu</string>
        </property>
       </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="buttonImportVrcholu">
+       <property name="text">
+        <string>Import vrcholu</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QGridLayout" name="gridLayout_4">
+     <item row="0" column="0">
+      <widget class="QTextEdit" name="textEditVpravo"/>
      </item>
     </layout>
    </widget>

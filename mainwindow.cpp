@@ -276,7 +276,7 @@ void MainWindow::onZmazVse()
     ui->comboDruhyVrchol->clear();
     ui->comboStartVrchol->clear();
     ui->comboCilVrchol->clear();
-    ui->textEditMatice->clear();
+    ui->textEditVpravo->clear();
 }
 
 // ─── Import vrcholu z Vrcholy.txt ────────────────────────────────────────────
@@ -491,16 +491,25 @@ void MainWindow::zmazMaticiSousednosti()
 
 void MainWindow::vypisMaticeSousednosti()
 {
-    ui->textEditMatice->clear();
+    ui->textEditVpravo->clear();
     QString matice;
+    QString hrany;
     int pocetVrcholu = ui->spinBoxPocetVrcholu->value();
     for (int i = 0; i < pocetVrcholu; ++i) {
+        QString hranyVrcholu;
         for (int j = 0; j < pocetVrcholu; ++j) {
-            matice += QString::number(mMaticeSousednosti[i][j]) + " ";
+            QString vaha = QString::number(mMaticeSousednosti[i][j]);
+
+            matice += vaha + " ";
+            if (mMaticeSousednosti[i][j] > 0)
+                hranyVrcholu += QString::number(i) + "-" + QString::number(j) + ": " + vaha + "\n";
         }
         matice += "\n";
+        if (!hranyVrcholu.isEmpty())
+            hrany += hranyVrcholu + "\n";
     }
-    ui->textEditMatice->setText(matice);
+    ui->textEditVpravo->setText(hrany);
+    ui->textEditVlevo->setText("Matice sousednosti:\n" + matice);
 }
 
 // ─── Dijkstra ────────────────────────────────────────────────────────────────
@@ -555,7 +564,7 @@ void MainWindow::onDijkstra()
     }
     int dist = mVrcholy[cilIndex]->mVzdalenostOdStartu;
     cestaText += "\nVzdalenost: " + (dist == INT_MAX ? QString("nedosazitelny") : QString::number(dist));
-    ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + cestaText);
+    ui->textEditVpravo->setText(ui->textEditVpravo->toPlainText() + "\n" + cestaText);
 
     vykresliGraf();
 }
@@ -696,7 +705,7 @@ void MainWindow::vypisVzdalenosti()
                  ": vzdalenost " + QString::number(mVrcholy[i]->mVzdalenostOdStartu) + ", " +
                 cestaKuStartu + "\n";
     }
-    ui->textEditMatice->setText(ui->textEditMatice->toPlainText() + "\n" + vypis);
+    ui->textEditVpravo->setText(ui->textEditVpravo->toPlainText() + "\n" + vypis);
 }
 
 // ─── Scene drawing ───────────────────────────────────────────────────────────
@@ -740,10 +749,13 @@ void MainWindow::vykresliGraf()
 
         mScene->addLine(QLineF(p1, p2), normalPen);
 
-        QGraphicsTextItem* wLabel = mScene->addText(QString::number(h->mVaha));
+        QString vahaPopis = QString::number(h->mIdA) + "-" + QString::number(h->mIdB) + ":" +
+                            QString::number(h->mVaha);
+
+        QGraphicsTextItem* wLabel = mScene->addText(vahaPopis);
         wLabel->setFont(smallFont);
         wLabel->setPos((p1 + p2) / 2.0);
-        wLabel->setDefaultTextColor(normalColor);
+        wLabel->setDefaultTextColor(QColor(0,0,0));
     }
 
     // ── Pass 2: shortest-path edges (green) ──────────────────────────────────
