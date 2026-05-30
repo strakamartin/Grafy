@@ -3,10 +3,9 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
+#include <QList>
 #include <vector>   //neco jako dynamicke pole, jenom chytrejsi
 #include <map>  //sklada sa u dvojice hodnot {klic, hodnota}
-#include <set>
-#include <QMap>
 #include <climits>
 #include <cmath>
 
@@ -52,8 +51,8 @@ private:
 
     int mPocetVrcholu;
     int** mMaticeSousednosti;  //dvorozmerne pole
-    std::vector<Vrchol> mVrcholy;
-    QMultiMap<int, Hrana> mHrany;
+    QList<Vrchol*> mVrcholy;
+    QList<Hrana*>  mHrany;
 
     //v mape je klic a hodnota, klicem bude vzdalenost od pocatecneho vrcholu
     //hodnota bude index daneho vrcholu
@@ -61,6 +60,9 @@ private:
     std::multimap<int, int> mDocastneVrcholy;//map nestaci, protoze vice uzlu muze mit rovnakou vzdalenost, chceme aby v mape byli vsichni
 
     QGraphicsScene* mScene;
+
+    QList<Vrchol*> mKostraGrafu;    // MST vertex pairs (even/odd indices = one edge each)
+    QList<Vrchol*> mNejkratsiCesta; // path vertices in order start→cíl
 
     void vytvorMaticiSousednosti();
     void zmazMaticiSousednosti();
@@ -72,8 +74,7 @@ private:
     void updateSousedu(int indexNejblizsihoVrcholu);
     void vypisVzdalenosti();
 
-    void kresliScene(const std::set<std::pair<int,int>>& zvyrazneneHrany = {},
-                     QColor zvyraznenaBarva = Qt::green);
+    void vykresliGraf();
 
     // Removes the undirected edge (x,y) from all data structures; does nothing
     // if x == y or the edge does not exist. Returns true if an edge was removed.

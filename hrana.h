@@ -6,14 +6,14 @@ class Vrchol;
 struct Hrana
 {
     Hrana();
-    Hrana(int indexA, int indexB, int vaha);
+    Hrana(int idA, int idB, int vaha);
 
     Vrchol* a;
     Vrchol* b;
 
     int mVaha;
-    int mIndexA;
-    int mIndexB;
+    int mIdA;
+    int mIdB;
 };
 
 #endif // HRANA_H
